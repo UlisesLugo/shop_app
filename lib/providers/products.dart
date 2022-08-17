@@ -42,6 +42,10 @@ class Products with ChangeNotifier {
     ),
   ];
 
+  final String _token;
+
+  Products(this._token, this._items);
+
   List<Product> get items {
     return [..._items];
   }
@@ -56,7 +60,9 @@ class Products with ChangeNotifier {
 
   Future<void> fetchProducts() async {
     final url = Uri.https(
-        'shop-app-flutter3-default-rtdb.firebaseio.com', 'products.json');
+        'shop-app-flutter3-default-rtdb.firebaseio.com', 'products.json', {
+      'auth': _token,
+    });
     final res = await http.get(url);
     final data = json.decode(res.body) as Map<String, dynamic>;
     final List<Product> loadedProducts = [];
