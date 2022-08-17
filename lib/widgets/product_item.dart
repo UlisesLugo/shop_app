@@ -16,6 +16,7 @@ class ProductItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final _product = Provider.of<Product>(context, listen: false);
     final _cart = Provider.of<Cart>(context, listen: false);
+    final scaffold = ScaffoldMessenger.of(context);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
@@ -39,7 +40,20 @@ class ProductItem extends StatelessWidget {
             builder: (_, dproduct, child) => IconButton(
               icon: Icon(
                   _product.isFavorite ? Icons.favorite : Icons.favorite_border),
-              onPressed: () => _product.toggleFavorite(),
+              onPressed: () async {
+                try {
+                  await _product.toggleFavorite();
+                } catch (error) {
+                  scaffold.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Updating failed!',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+              },
               color: Theme.of(context).colorScheme.secondary,
             ),
           ),
@@ -55,7 +69,7 @@ class ProductItem extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Added item to cart!'),
-                  duration: Duration(seconds: 5),
+                  duration: Duration(seconds: 1),
                   action: SnackBarAction(
                     label: 'UNDO',
                     onPressed: () {

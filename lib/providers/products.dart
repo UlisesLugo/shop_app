@@ -1,17 +1,21 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import '../models/http_exception.dart';
 import './product.dart';
 
 class Products with ChangeNotifier {
   List<Product> _items = [
-    Product(
-      id: 'p1',
-      title: 'Red Shirt',
-      description: 'A red shirt - it is pretty red!',
-      price: 29.99,
-      imageUrl:
-          'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
-    ),
+    // Product(
+    //   id: 'p1',
+    //   title: 'Red Shirt',
+    //   description: 'A red shirt - it is pretty red!',
+    //   price: 29.99,
+    //   imageUrl:
+    //       'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
+    // ),
     Product(
       id: 'p2',
       title: 'Trousers',
@@ -50,30 +54,93 @@ class Products with ChangeNotifier {
     return _items.firstWhere((el) => el.id == id);
   }
 
-  void addProduct(Product product) {
+  Future<void> fetchProducts() async {
+    final url = Uri.https(
+        'shop-app-flutter3-default-rtdb.firebaseio.com', 'products.json');
+    final res = await http.get(url);
+    final data = json.decode(res.body) as Map<String, dynamic>;
+    final List<Product> loadedProducts = [];
+
+    data.forEach((key, value) {
+      loadedProducts.add(
+        Product(
+          id: key,
+          title: value['title'],
+          description: value['description'],
+          price: value['price'],
+          imageUrl: value['imageUrl'],
+          isFavorite: value['isFavorite'],
+        ),
+      );
+    });
+
+    _items = loadedProducts;
+    notifyListeners();
+  }
+
+  Future<void> addProduct(Product product) async {
+    final url = Uri.https(
+        'shop-app-flutter3-default-rtdb.firebaseio.com', 'products.json');
+    final res = await http.post(
+      url,
+      body: json.encode({
+        'title': product.title,
+        'description': product.description,
+        'price': product.price,
+        'imageUrl': product.imageUrl,
+        'isFavorite': product.isFavorite,
+      }),
+    );
     final newProduct = Product(
-        id: DateTime.now().toString(),
-        title: product.title,
-        description: product.description,
-        price: product.price,
-        imageUrl: product.imageUrl);
+      id: json.decode(res.body)['name'],
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    );
     _items.add(newProduct);
     notifyListeners();
   }
 
-  void updateProduct(Product product) {
+  Future<void> updateProduct(Product product) async {
     var index = _items.indexWhere((pr) => product.id == pr.id);
+    final url = Uri.https('shop-app-flutter3-default-rtdb.firebaseio.com',
+        'products/${product.id}.json');
     if (index >= 0) {
+      await http.patch(url,
+          body: json.encode({
+            'title': product.title,
+            'description': product.description,
+            'price': product.price,
+            'imageUrl': product.imageUrl,
+          }));
       _items[index] = product;
       notifyListeners();
     }
   }
 
-  void deleteProduct(String productId) {
+  Future<void> deleteProduct(String productId) async {
     var index = _items.indexWhere((pr) => productId == pr.id);
+    final url = Uri.https('shop-app-flutter3-default-rtdb.firebaseio.com',
+        'products/$productId.json');
+
     if (index >= 0) {
+      var product = _items[index];
       _items.removeAt(index);
       notifyListeners();
+
+      final res = await http.delete(url);
+      if (res.statusCode >= 400) {
+        _items.insert(index, product); // Optimistic updating
+        notifyListeners();
+        throw HttpException('Could not delete product.');
+      }
+
+      product = null;
     }
   }
 }
+
+// Example images
+// Two schnauzers:
+// https://t2.uc.ltmcdn.com/es/posts/5/1/3/como_saber_si_un_schnauzer_es_de_raza_50315_600_square.jpg
