@@ -17,7 +17,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Future _ordersFuture;
 
   Future<void> _refreshOrders(BuildContext ctx) async {
-    await Provider.of<Orders>(ctx, listen: false).fetchProducts();
+    await Provider.of<Orders>(ctx, listen: false).fetchOrders();
   }
 
   @override
