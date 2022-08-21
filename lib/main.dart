@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_app/widgets/splash.dart';
 
 import './screens/auth_screen.dart';
 import './screens/cart_screen.dart';
@@ -52,7 +53,16 @@ class MyApp extends StatelessWidget {
                 colorScheme:
                     ColorScheme.fromSwatch(primarySwatch: Colors.purple)
                         .copyWith(secondary: Colors.deepOrange)),
-            home: auth.isAuth ? ProductsOverviewScreen() : AuthScreen(),
+            home: auth.isAuth
+                ? ProductsOverviewScreen()
+                : FutureBuilder(
+                    future: auth.tryAutoLogin(),
+                    builder: (ctx, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Splash();
+                      }
+                      return AuthScreen();
+                    }),
             routes: {
               // '/': (ctx) => ProductsOverviewScreen(),
               ProductDetailScreen.routeName: (ctx) => ProductDetailScreen(),

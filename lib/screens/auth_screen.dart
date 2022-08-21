@@ -105,6 +105,7 @@ class _AuthCardState extends State<AuthCard> {
   final _passwordController = TextEditingController();
 
   void _showErrorDialog(String message) {
+    print("Showing error Dialog, why?");
     showDialog(
         context: context,
         builder: (ctx) {
@@ -158,6 +159,7 @@ class _AuthCardState extends State<AuthCard> {
       }
       _showErrorDialog(errorMsg);
     } catch (error) {
+      print(error);
       errorMsg = 'Could not authenticate you. Please try again later.';
       _showErrorDialog(errorMsg);
     }

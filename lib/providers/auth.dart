@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/http_exception.dart';
 
@@ -54,8 +55,15 @@ class Auth with ChangeNotifier {
           seconds: int.parse(data['expiresIn']),
         ),
       );
-      autoLogout();
+      _autoLogout();
       notifyListeners();
+      final preferences = await SharedPreferences.getInstance();
+      final userData = json.encode({
+        'token': _token,
+        'userId': _userId,
+        'expiryDate': _expiryDate.toIso8601String(),
+      });
+      preferences.setString('userData', userData);
     } catch (error) {
       throw error;
     }
@@ -69,7 +77,28 @@ class Auth with ChangeNotifier {
     return _authenticate(email, password, 'v1/accounts:signInWithPassword');
   }
 
-  void logout() {
+  Future<bool> tryAutoLogin() async {
+    final preferences = await SharedPreferences.getInstance();
+    if (!preferences.containsKey('userData')) {
+      return false;
+    }
+    final userData =
+        json.decode(preferences.getString('userData')) as Map<String, Object>;
+    final expiryDate = DateTime.parse(userData['expiryDate']);
+
+    if (expiryDate.isBefore(DateTime.now())) {
+      return false;
+    }
+
+    _token = userData['token'];
+    _userId = userData['userId'];
+    _expiryDate = expiryDate;
+    notifyListeners();
+    _autoLogout();
+    return true;
+  }
+
+  Future<void> logout() async {
     _token = null;
     _userId = null;
     _expiryDate = null;
@@ -78,9 +107,11 @@ class Auth with ChangeNotifier {
       _authTimer = null;
     }
     notifyListeners();
+    final preferences = await SharedPreferences.getInstance();
+    preferences.clear();
   }
 
-  void autoLogout() {
+  void _autoLogout() {
     if (_authTimer != null) {
       _authTimer.cancel();
     }
@@ -88,7 +119,5 @@ class Auth with ChangeNotifier {
     _authTimer = Timer(Duration(seconds: timeToExpiry), logout);
   }
 
-  void autoLogin() {
-    
-  }
+  void _autoLogin() {}
 }
