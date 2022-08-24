@@ -24,9 +24,13 @@ class ProductItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       child: GridTile(
         child: GestureDetector(
-          child: Image.network(
-            _product.imageUrl,
-            fit: BoxFit.cover,
+          child: Hero(
+            tag: _product.id,
+            child: FadeInImage(
+              placeholder: AssetImage('assets/images/product-placeholder.png'),
+              image: NetworkImage(_product.imageUrl),
+              fit: BoxFit.cover,
+            ),
           ),
           onTap: () {
             Navigator.of(context)
@@ -44,9 +48,7 @@ class ProductItem extends StatelessWidget {
                   _product.isFavorite ? Icons.favorite : Icons.favorite_border),
               onPressed: () async {
                 try {
-                  await _product.toggleFavorite(
-                    _auth.token, _auth.userId
-                  );
+                  await _product.toggleFavorite(_auth.token, _auth.userId);
                 } catch (error) {
                   print(error);
                   scaffold.showSnackBar(
